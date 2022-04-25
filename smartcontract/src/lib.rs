@@ -1,6 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::Vector;
-use near_sdk::{env, log, near_bindgen, setup_alloc};
+use near_sdk::{env, log, near_bindgen, setup_alloc, assert_one_yocto};
 use std::ops::AddAssign;
 
 const LAST_NUMBERS_FOR_AVERAGE: u64 = 5;
@@ -25,6 +25,7 @@ impl Default for AveragePrice {
 impl AveragePrice {
     #[payable]
     pub fn set_last_price(&mut self, price: &f64) {
+        assert_one_yocto();
         if !price.is_normal() {
             env::panic(b"Method set_last_price doesn't accept the number is neither zero, infinite, subnormal, or NaN");
         }
@@ -64,8 +65,10 @@ mod tests {
     use std::convert::TryInto;
 
     fn get_context(is_view: bool) -> VMContext {
+
         VMContextBuilder::new()
             .signer_account_id("vkarnaukhov.testnet".try_into().unwrap())
+            .attached_deposit(1)
             .is_view(is_view)
             .build()
     }
@@ -125,7 +128,7 @@ mod tests {
     fn get_average_price_on_empty() {
         let context = get_context(true);
         testing_env!(context);
-        let mut contract = AveragePrice::default();
+        let contract = AveragePrice::default();
         contract.get_average_price().unwrap();
         assert_eq!(
             get_logs(),
